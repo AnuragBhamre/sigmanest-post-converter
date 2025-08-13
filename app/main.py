@@ -5,12 +5,12 @@ from typing import Any, Dict
 from app.validator import load_schema, validate_payload
 from app.parser import convert_pst_pas
 
-app = FastAPI(title="SigmaNEST Post Converter", version="1.0")
+app = FastAPI(title="SigmaNEST Post Converter", version="1.0")  # ✅
 
 # Serve the web UI
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
-@app.get("/healthz")
+@app.get("/healthz")  # ✅
 def healthz():
     return {"ok": True, "version": "1.0"}
 
