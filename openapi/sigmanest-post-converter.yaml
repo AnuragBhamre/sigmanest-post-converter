@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: SigmaNEST Post Converter
+  version: "1.0"
+servers:
+  - url: https://localhost
+paths:
+  /convert:
+    post:
+      operationId: convertPost
+      summary: Convert PST+PAS into canonical JSON
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [pst, pas]
+              properties:
+                pst:
+                  type: string
+                  format: binary
+                pas:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Canonical JSON payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostJson'
+        "400":
+          description: Missing files or parse error
+  /validate:
+    post:
+      operationId: validatePost
+      summary: Validate payload against postschema.v1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostJson'
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid, errors, warnings]
+                properties:
+                  valid: { type: boolean }
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      required: [path, code, message, provenance]
+                      properties:
+                        path: { type: string }
+                        code: { type: string }
+                        message: { type: string }
+                        provenance:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              pst_section: { type: string }
+                              line: { type: integer }
+                              raw: { type: string }
+                              handler: { type: string }
+                  warnings:
+                    type: array
+                    items: { type: string }
+components:
+  schemas:
+    PostJson:
+      type: object
+      required: [machine, machine_settings, process_mappings, canned_cycles, provenance]
+      properties:
+        machine:
+          type: object
+          required: [make, model, controller]
+          properties:
+            make: { type: string }
+            model: { type: string }
+            controller: { type: string }
+        machine_settings: { type: object, additionalProperties: true }
+        zones: { type: object, additionalProperties: true }
+        clamps: { type: object, additionalProperties: true }
+        process_mappings:
+          type: array
+          items:
+            type: object
+            required: [usage, process]
+            properties:
+              usage: { type: integer }
+              process: { type: integer }
+              notes: { type: string }
+        canned_cycles:
+          type: array
+          items:
+            type: object
+            required: [section, name, handler]
+            properties:
+              section: { type: string }
+              name: { type: string }
+              handler: { type: string }
+        tangency_macros: { type: object, additionalProperties: true }
+        auto_punch: { type: object, additionalProperties: true }
+        reposition: { type: object, additionalProperties: true }
+        flip_sheet: { type: object, additionalProperties: true }
+        compatibility_rules: { type: object, additionalProperties: true }
+        provenance:
+          type: array
+          items:
+            type: object
+            properties:
+              pst_section: { type: string }
+              line: { type: integer }
+              raw: { type: string }
+              handler: { type: string }

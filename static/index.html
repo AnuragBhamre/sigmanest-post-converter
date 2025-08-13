@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SigmaNEST PST+PAS → JSON</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    h1 { margin-bottom: 0.25rem; }
+    .card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    input[type=file] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; width: 100%; }
+    button { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; }
+    button.primary { background: #2563eb; color: white; }
+    button.secondary { background: #e5e7eb; }
+    pre { background: #0f172a; color: #e5e7eb; padding: 12px; border-radius: 8px; overflow: auto; max-height: 420px; }
+    .status { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <h1>SigmaNEST PST + PAS → JSON</h1>
+  <p class="status">Upload a <strong>.PST</strong> and a matching <strong>.pas</strong>, then click <em>Convert & Validate</em>.</p>
+
+  <div class="card">
+    <div class="row">
+      <div style="flex:1; min-width:260px">
+        <label for="pst">PST file</label>
+        <input type="file" id="pst" accept=".PST,.pst"/>
+      </div>
+      <div style="flex:1; min-width:260px">
+        <label for="pas">PAS file</label>
+        <input type="file" id="pas" accept=".pas,.PAS"/>
+      </div>
+    </div>
+    <div style="margin-top:12px" class="row">
+      <button class="primary" id="runBtn">Convert & Validate</button>
+      <button class="secondary" id="dlBtn" disabled>Download JSON</button>
+      <button class="secondary" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Summary</h3>
+    <pre id="summary">Awaiting files…</pre>
+  </div>
+
+  <div class="card">
+    <h3>JSON Output</h3>
+    <pre id="jsonOut">{}</pre>
+  </div>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const pstEl = $("#pst");
+const pasEl = $("#pas");
+const runBtn = $("#runBtn");
+const dlBtn = $("#dlBtn");
+const resetBtn = $("#resetBtn");
+const summaryEl = $("#summary");
+const jsonOutEl = $("#jsonOut");
+let lastJson = null;
+
+function setBusy(on) {
+  runBtn.disabled = on;
+  runBtn.textContent = on ? "Working…" : "Convert & Validate";
+}
+
+resetBtn.onclick = () => {
+  pstEl.value = "";
+  pasEl.value = "";
+  summaryEl.textContent = "Awaiting files…";
+  jsonOutEl.textContent = "{}";
+  lastJson = null;
+  dlBtn.disabled = true;
+}
+
+dlBtn.onclick = () => {
+  if (!lastJson) return;
+  const blob = new Blob([JSON.stringify(lastJson, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "post.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+runBtn.onclick = async () => {
+  if (!pstEl.files[0] || !pasEl.files[0]) {
+    alert("Please select both PST and PAS files.");
+    return;
+  }
+  setBusy(true);
+  summaryEl.textContent = "Uploading and converting…";
+  try {
+    const form = new FormData();
+    form.append("pst", pstEl.files[0]);
+    form.append("pas", pasEl.files[0]);
+    const convResp = await fetch("/convert", { method: "POST", body: form });
+    if (!convResp.ok) {
+      const tx = await convResp.text();
+      throw new Error("Convert failed: " + tx);
+    }
+    const payload = await convResp.json();
+    jsonOutEl.textContent = JSON.stringify(payload, null, 2);
+    summaryEl.textContent = "Validating…";
+    const valResp = await fetch("/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (!valResp.ok) {
+      const tx = await valResp.text();
+      throw new Error("Validate failed: " + tx);
+    }
+    const val = await valResp.json();
+    let s = `Valid: ${val.valid}
+Warnings: ${val.warnings?.length || 0}
+Errors: ${val.errors?.length || 0}`;
+    if (!val.valid && val.errors?.length) {
+      s += "\n\nTop errors:\n" + val.errors.slice(0, 10).map(e => `${e.path}: ${e.message}`).join("\n");
+    }
+    summaryEl.textContent = s;
+    lastJson = payload;
+    dlBtn.disabled = false;
+  } catch (e) {
+    summaryEl.textContent = String(e);
+  } finally {
+    setBusy(false);
+  }
+};
+</script>
+</body>
+</html>

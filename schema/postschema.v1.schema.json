@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schema/postschema.v1.schema.json",
+  "title": "SigmaNEST Post Canonical JSON v1",
+  "type": "object",
+  "required": [
+    "machine",
+    "machine_settings",
+    "process_mappings",
+    "canned_cycles",
+    "provenance"
+  ],
+  "properties": {
+    "machine": {
+      "type": "object",
+      "required": [
+        "make",
+        "model",
+        "controller"
+      ],
+      "properties": {
+        "make": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "controller": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "machine_settings": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "zones": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "clamps": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "process_mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "usage",
+          "process"
+        ],
+        "properties": {
+          "usage": {
+            "type": "integer"
+          },
+          "process": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "canned_cycles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "section",
+          "name",
+          "handler"
+        ],
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "handler": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tangency_macros": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "auto_punch": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "reposition": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "flip_sheet": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "compatibility_rules": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "pst_section": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "raw": {
+            "type": "string"
+          },
+          "handler": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
